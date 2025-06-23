@@ -1,49 +1,43 @@
-﻿let playerName = "You";
-let isWalking = false;
-let frameToggle = false;
-
 const kitty = document.getElementById("kitty");
 const cakesContainer = document.getElementById("cakes-container");
 const counter = document.getElementById("counter");
 const popup = document.getElementById("popup");
 const popupTitle = document.getElementById("popup-title");
 const popupText = document.getElementById("popup-text");
+
 const walkSound = document.getElementById("walkSound");
 const eatSound = document.getElementById("eatSound");
 const popupSound = document.getElementById("popupSound");
 
+const introScreen = document.getElementById("intro-screen");
+const gameContainer = document.getElementById("game-container");
+const playerNameInput = document.getElementById("player-name-input");
+
 let cakeCount = 0;
 let cakes = [];
+let frame = 0;
+const totalFrames = 4;
 
+// Start Game
 function startGame() {
-  const nameInput = document.getElementById("player-name-input").value.trim();
-  if (nameInput) {
-    playerName = nameInput;
+  const name = playerNameInput.value.trim();
+  if (!name) {
+    alert("Please enter your name to start!");
+    return;
   }
 
-  document.getElementById("intro-screen").classList.add("hidden");
-  document.getElementById("game-container").classList.remove("hidden");
+  introScreen.classList.add("hidden");
+  gameContainer.classList.remove("hidden");
 
   createCakes();
   createClouds();
-  counter.textContent = `Cakes: 0`;
 }
 
-function animateKitty() {
-  kitty.src = frameToggle ? "kitty_walk.png" : "kitty_stand.png";
-  frameToggle = !frameToggle;
-  clearTimeout(walkTimeout);
-  walkTimeout = setTimeout(() => {
-    kitty.src = "kitty_stand.png";
-  }, 300);
-}
-
-let walkTimeout;
-
+// Create 15 cakes randomly
 function createCakes() {
   for (let i = 0; i < 15; i++) {
     const cake = document.createElement("img");
-    cake.src = "cake.png";
+    cake.src = "images/cake.png";
     cake.classList.add("cake");
     cake.style.top = Math.random() * 90 + "%";
     cake.style.left = Math.random() * 90 + "%";
@@ -52,6 +46,49 @@ function createCakes() {
   }
 }
 
+// Move Hello Kitty
+document.addEventListener("keydown", (e) => {
+  const step = 10;
+  let moved = false;
+  let x = kitty.offsetLeft;
+  let y = kitty.offsetTop;
+
+  if (e.key === "ArrowLeft") {
+    x -= step;
+    moved = true;
+  }
+  if (e.key === "ArrowRight") {
+    x += step;
+    moved = true;
+  }
+  if (e.key === "ArrowUp") {
+    y -= step;
+    moved = true;
+  }
+  if (e.key === "ArrowDown") {
+    y += step;
+    moved = true;
+  }
+
+  if (moved) {
+    kitty.style.left = `${x}px`;
+    kitty.style.top = `${y}px`;
+
+    walkSound.currentTime = 0;
+    walkSound.play();
+
+    animateKitty();
+    checkCollision();
+  }
+});
+
+// Animate Kitty Walk
+function animateKitty() {
+  frame = (frame + 1) % totalFrames;
+  kitty.style.backgroundPosition = `-${frame * 80}px 0`;
+}
+
+// Collision detection with cakes
 function checkCollision() {
   const kittyBox = kitty.getBoundingClientRect();
 
@@ -80,19 +117,29 @@ function checkCollision() {
   }
 }
 
+// Celebration with confetti and popup
 function celebrate() {
   popupSound.currentTime = 0;
   popupSound.play();
   popup.classList.remove("hidden");
-  popupTitle.textContent = `🎉🎂 Happy Birthday, ${playerName}! 🎂🎉`;
-  popupText.textContent = `You helped Hello Kitty eat all the cakes, ${playerName}!`;
-  confetti({ particleCount: 300, spread: 120, origin: { y: 0.6 } });
+
+  const name = playerNameInput.value.trim() || "friend";
+  popupTitle.textContent = `🎉🎂 Happy Birthday, ${name}! 🎂🎉`;
+  popupText.textContent = `You helped Hello Kitty eat all the cakes!`;
+
+  confetti({
+    particleCount: 300,
+    spread: 120,
+    origin: { y: 0.6 }
+  });
 }
 
+// Reset the game
 function resetGame() {
   window.location.reload();
 }
 
+// Floating clouds
 function createClouds() {
   const cloudsContainer = document.getElementById("clouds-container");
   const cloudCount = 5;
@@ -100,57 +147,10 @@ function createClouds() {
   for (let i = 0; i < cloudCount; i++) {
     const cloud = document.createElement("div");
     cloud.classList.add("cloud");
-    cloud.style.top = Math.random() * 80 + "px";
+    cloud.style.top = (10 + i * 20) + "px";
     cloud.style.animationDuration = (30 + Math.random() * 30) + "s";
     cloud.style.animationDelay = (i * 6) + "s";
+    cloud.style.left = `${-150 - i * 200}px`;
     cloudsContainer.appendChild(cloud);
   }
 }
-
-window.addEventListener("keydown", function(e) {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-    e.preventDefault();
-  }
-});
-
-document.addEventListener("keydown", (e) => {
-  if (document.getElementById("game-container").classList.contains("hidden")) return;
-
-  const step = 10;
-  let moved = false;
-  let x = kitty.offsetLeft;
-  let y = kitty.offsetTop;
-
-  const container = document.getElementById("game-container");
-  const maxX = container.clientWidth - kitty.clientWidth;
-  const maxY = container.clientHeight - kitty.clientHeight;
-
-  if (e.key === "ArrowLeft") {
-    x -= step;
-    moved = true;
-  }
-  if (e.key === "ArrowRight") {
-    x += step;
-    moved = true;
-  }
-  if (e.key === "ArrowUp") {
-    y -= step;
-    moved = true;
-  }
-  if (e.key === "ArrowDown") {
-    y += step;
-    moved = true;
-  }
-
-  x = Math.max(0, Math.min(x, maxX));
-  y = Math.max(0, Math.min(y, maxY));
-
-  if (moved) {
-    animateKitty();
-    kitty.style.left = `${x}px`;
-    kitty.style.top = `${y}px`;
-    walkSound.currentTime = 0;
-    walkSound.play();
-    checkCollision();
-  }
-});
